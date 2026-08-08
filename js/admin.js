@@ -270,6 +270,98 @@ function initForms() {
   });
 }
 
+// ---------------------------------------------------------------------
+// PROFESORES Y SALONES (asignación desde el admin, sin SQL manual)
+// ---------------------------------------------------------------------
+let PROFESOR_SELECCIONADO = null;
+
+async function cargarProfesores() {
+  const box = document.getElementById("profesores-list");
+  const { data: profesores, error } = await supabaseClient
+    .from("usuarios")
+    .select("id, nombre, codigo")
+    .eq("rol", "teacher")
+    .order("nombre");
+
+  if (error || !profesores?.length) {
+    box.innerHTML = `<div class="empty-state">No hay profesores registrados todavía.</div>`;
+    return;
+  }
+
+  const { data: asignaciones } = await supabaseClient
+    .from("profesor_salones")
+    .select("profesor_id, salones(nombre)");
+
+  const mapa = new Map();
+  (asignaciones || []).forEach((a) => {
+    if (!mapa.has(a.profesor_id)) mapa.set(a.profesor_id, []);
+    if (a.salones?.nombre) mapa.get(a.profesor_id).push(a.salones.nombre);
+  });
+
+  box.innerHTML = profesores
+    .map((p) => {
+      const salones = mapa.get(p.id) || [];
+      return `
+      <div class="list-item">
+        <div>
+          <div class="title">${escapeHTML(p.nombre)} <span class="badge badge-gray">${escapeHTML(p.codigo)}</span></div>
+          <div class="desc">${salones.length ? escapeHTML(salones.join(", ")) : "Sin salones asignados"}</div>
+        </div>
+        <button class="btn btn-blue btn-sm" onclick='abrirAsignarSalones("${p.id}", ${JSON.stringify(p.nombre)})'>Asignar salones</button>
+      </div>`;
+    })
+    .join("");
+}
+
+async function abrirAsignarSalones(profesorId, nombre) {
+  PROFESOR_SELECCIONADO = profesorId;
+  document.getElementById("asignar-salones-titulo").textContent = `Salones de ${nombre}`;
+
+  const { data: asignadosActuales } = await supabaseClient
+    .from("profesor_salones")
+    .select("salon_id")
+    .eq("profesor_id", profesorId);
+  const idsAsignados = new Set((asignadosActuales || []).map((a) => a.salon_id));
+
+  const checklist = document.getElementById("asignar-salones-checklist");
+  if (!SALONES_CACHE.length) {
+    checklist.innerHTML = `<div class="empty-state">No hay salones creados todavía.</div>`;
+  } else {
+    checklist.innerHTML = SALONES_CACHE
+      .map(
+        (s) => `
+        <label class="option-row ${idsAsignados.has(s.id) ? "selected" : ""}" style="cursor:pointer;">
+          <input type="checkbox" value="${s.id}" ${idsAsignados.has(s.id) ? "checked" : ""}
+                 onchange="this.closest('.option-row').classList.toggle('selected', this.checked)" />
+          <span>${escapeHTML(s.nombre)} ${s.grados?.nombre ? `— Grado ${escapeHTML(s.grados.nombre)}` : ""}</span>
+        </label>`
+      )
+      .join("");
+  }
+
+  openModal("modal-asignar-salones");
+}
+
+async function guardarAsignacionSalones() {
+  if (!PROFESOR_SELECCIONADO) return;
+  const checkboxes = document.querySelectorAll("#asignar-salones-checklist input[type=checkbox]");
+  const seleccionados = Array.from(checkboxes).filter((c) => c.checked).map((c) => Number(c.value));
+
+  // Reemplaza el conjunto completo: borra las asignaciones actuales y crea las nuevas.
+  const { error: delErr } = await supabaseClient.from("profesor_salones").delete().eq("profesor_id", PROFESOR_SELECCIONADO);
+  if (delErr) return toast("No se pudo actualizar la asignación.", "error");
+
+  if (seleccionados.length) {
+    const filas = seleccionados.map((salon_id) => ({ profesor_id: PROFESOR_SELECCIONADO, salon_id }));
+    const { error: insErr } = await supabaseClient.from("profesor_salones").insert(filas);
+    if (insErr) return toast("No se pudo guardar la asignación.", "error");
+  }
+
+  toast("Salones actualizados.", "success");
+  closeModal("modal-asignar-salones");
+  cargarProfesores();
+}
+
 async function initAdmin() {
   const user = await requireAuth("admin");
   if (!user) return;
@@ -281,6 +373,7 @@ async function initAdmin() {
 
   await Promise.all([cargarGrados(), cargarSalones()]);
   await cargarUsuarios();
+  await cargarProfesores();
   await initNotificaciones(user.id);
 }
 

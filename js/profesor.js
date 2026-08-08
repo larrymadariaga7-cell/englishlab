@@ -247,7 +247,91 @@ function exportarResultadosExcel() {
 // MODALES: crear actividad / simulacro
 // ---------------------------------------------------------------------
 function abrirModalActividad() { openModal("modal-actividad"); }
-function abrirModalSimulacro() { openModal("modal-simulacro-editor"); }
+function abrirModalSimulacro() {
+  reiniciarPreguntasBuilder();
+  agregarPreguntaBuilder(); // arranca con una pregunta lista para llenar
+  openModal("modal-simulacro-editor");
+}
+
+// ---------------------------------------------------------------------
+// EDITOR DE PREGUNTAS (sin JSON) — cada pregunta con enunciado + 4 opciones
+// ---------------------------------------------------------------------
+let preguntaBuilderIds = [];
+let preguntaBuilderCounter = 0;
+
+function agregarPreguntaBuilder() {
+  preguntaBuilderCounter++;
+  preguntaBuilderIds.push(preguntaBuilderCounter);
+  renderPreguntasBuilder();
+}
+
+function removerPreguntaBuilder(id) {
+  preguntaBuilderIds = preguntaBuilderIds.filter((x) => x !== id);
+  renderPreguntasBuilder();
+}
+
+function renderPreguntasBuilder() {
+  const box = document.getElementById("preguntas-builder");
+  const empty = document.getElementById("preguntas-builder-empty");
+  if (!box) return;
+  empty.style.display = preguntaBuilderIds.length ? "none" : "block";
+
+  box.innerHTML = preguntaBuilderIds
+    .map(
+      (id, idx) => `
+    <div class="card" style="margin-bottom:12px;" data-pregunta-id="${id}">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <strong style="font-size:13px; color:var(--text-muted);">Pregunta ${idx + 1}</strong>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removerPreguntaBuilder(${id})">Eliminar</button>
+      </div>
+      <div class="form-field" style="margin-bottom:10px;">
+        <label>Enunciado</label>
+        <input type="text" class="pb-pregunta" maxlength="300" placeholder="Ej: Choose the correct form: She ___ to school every day." />
+      </div>
+      <div class="form-grid">
+        ${[0, 1, 2, 3]
+          .map(
+            (i) => `
+          <div class="form-field">
+            <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+              <input type="radio" name="correcta-${id}" class="pb-correcta" value="${i}" ${i === 0 ? "checked" : ""} />
+              Opción ${i + 1}${i === 0 ? " (marca la correcta)" : ""}
+            </label>
+            <input type="text" class="pb-opcion" maxlength="150" placeholder="Texto de la opción ${i + 1}" />
+          </div>`
+          )
+          .join("")}
+      </div>
+    </div>`
+    )
+    .join("");
+}
+
+function leerPreguntasBuilder() {
+  const bloques = document.querySelectorAll("#preguntas-builder [data-pregunta-id]");
+  if (!bloques.length) {
+    toast("Agrega al menos una pregunta antes de guardar.", "error");
+    return null;
+  }
+  const preguntas = [];
+  for (const bloque of bloques) {
+    const pregunta = bloque.querySelector(".pb-pregunta").value.trim();
+    const opciones = Array.from(bloque.querySelectorAll(".pb-opcion")).map((i) => i.value.trim());
+    const correctaInput = bloque.querySelector(".pb-correcta:checked");
+    if (!pregunta || opciones.some((o) => !o) || !correctaInput) {
+      toast("Completa el enunciado y las 4 opciones de cada pregunta.", "error");
+      return null;
+    }
+    preguntas.push({ pregunta, opciones, correcta: Number(correctaInput.value) });
+  }
+  return preguntas;
+}
+
+function reiniciarPreguntasBuilder() {
+  preguntaBuilderIds = [];
+  preguntaBuilderCounter = 0;
+  renderPreguntasBuilder();
+}
 
 async function recargarTodo() {
   const salonIds = SALONES_ASIGNADOS.map((s) => s.id);
@@ -288,14 +372,8 @@ function initFormsProfesor() {
     const estado = document.getElementById("sim-estado").value;
     const salon = SALONES_ASIGNADOS.find((s) => s.id === salon_id);
 
-    let preguntas;
-    try {
-      preguntas = JSON.parse(document.getElementById("sim-preguntas").value || "[]");
-      if (!Array.isArray(preguntas)) throw new Error("no-array");
-    } catch {
-      toast("El JSON de preguntas no es válido. Revisa el formato.", "error");
-      return;
-    }
+    const preguntas = leerPreguntasBuilder();
+    if (!preguntas) return; // leerPreguntasBuilder ya muestra el toast de error correspondiente
 
     const { error } = await supabaseClient.from("simulacros").insert({
       titulo,
@@ -310,6 +388,7 @@ function initFormsProfesor() {
     toast("Simulacro guardado.", "success");
     closeModal("modal-simulacro-editor");
     e.target.reset();
+    reiniciarPreguntasBuilder();
     recargarTodo();
   });
 }

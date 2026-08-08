@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Englishlab Gs — Mi panel</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -11,7 +15,22 @@
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-logo">EG</div>
+      <span class="brand-mark sm">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="egGradSide" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#f5b942"/><stop offset="1" stop-color="#2dd4bf"/>
+            </linearGradient>
+          </defs>
+          <polygon points="24,7 38,15 38,31 24,39 10,31 10,15" fill="none" stroke="url(#egGradSide)" stroke-width="2.25"/>
+          <line x1="18" y1="20" x2="30" y2="20" stroke="url(#egGradSide)" stroke-width="2"/>
+          <line x1="18" y1="20" x2="24" y2="30" stroke="url(#egGradSide)" stroke-width="2"/>
+          <line x1="30" y1="20" x2="24" y2="30" stroke="url(#egGradSide)" stroke-width="2"/>
+          <circle cx="18" cy="20" r="3.4" fill="url(#egGradSide)"/>
+          <circle cx="30" cy="20" r="3.4" fill="url(#egGradSide)"/>
+          <circle cx="24" cy="30" r="3.4" fill="url(#egGradSide)"/>
+        </svg>
+      </span>
       <div class="brand-title">Englishlab Gs</div>
     </div>
     <nav>
@@ -26,6 +45,10 @@
       <a class="nav-link" href="#ranking" onclick="mostrarSeccion('ranking')">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 9a2 2 0 0 1-2-2V5h4M19 9a2 2 0 0 0 2-2V5h-4"/></svg>
         Ranking
+      </a>
+      <a class="nav-link" href="perfil.html">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Mi perfil
       </a>
     </nav>
     <div class="sidebar-footer">
