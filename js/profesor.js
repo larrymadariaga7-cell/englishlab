@@ -390,10 +390,16 @@ function reiniciarPreguntasBuilder() {
 // ---------------------------------------------------------------------
 function abrirModalPdf() {
   document.getElementById("pdf-file").value = "";
+  document.getElementById("pdf-file-label").textContent = "Toca para elegir un archivo PDF";
   document.getElementById("pdf-extract-status").style.display = "none";
   const sel = document.getElementById("pdf-salon");
   sel.innerHTML = SALONES_ASIGNADOS.map((s) => `<option value="${s.id}">${escapeHTML(s.nombre)}</option>`).join("");
   openModal("modal-pdf-upload");
+}
+
+function actualizarNombrePdf(event) {
+  const file = event.target.files[0];
+  document.getElementById("pdf-file-label").textContent = file ? file.name : "Toca para elegir un archivo PDF";
 }
 
 async function extraerTextoPdf(file) {

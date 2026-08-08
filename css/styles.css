@@ -233,6 +233,8 @@ ul { list-style: none; }
 .bell-dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); display: none; }
 .bell-dot.show { display: block; }
 
+.logout-btn-mobile { display: none; color: #fca5a5; }
+
 .dropdown {
   position: absolute; right: 0; top: 48px; width: 320px; background: var(--surface);
   border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -396,6 +398,7 @@ tbody tr:last-child td { border-bottom: none; }
   .grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .stat-card .stat-value { font-size: 24px; }
   .dropdown { width: min(320px, calc(100vw - 32px)); right: -8px; }
+  .logout-btn-mobile { display: flex; }
   .modal { padding: 18px; max-height: 92vh; }
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions .btn { width: 100%; justify-content: center; }

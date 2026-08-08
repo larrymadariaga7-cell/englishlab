@@ -130,6 +130,7 @@ async function initNotificaciones(userId) {
 // ---------------------------------------------------------------------
 function bindLogoutButton() {
   document.getElementById("logout-btn")?.addEventListener("click", logout);
+  document.getElementById("logout-btn-top")?.addEventListener("click", logout);
 }
 
 // ---------------------------------------------------------------------
