@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Englishlab Gs — Panel de administración</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">EG</div>
+      <div class="brand-title">Englishlab Gs</div>
+    </div>
+    <nav>
+      <a class="nav-link active" href="#top">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Panel
+      </a>
+      <a class="nav-link" href="#sec-grados" onclick="mostrarSeccion('grados')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        Grados y salones
+      </a>
+      <a class="nav-link" href="#sec-usuarios" onclick="mostrarSeccion('usuarios')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuarios
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" id="logout-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="main" id="top">
+    <div class="topbar">
+      <div>
+        <h1>Panel de administración</h1>
+        <div class="sub">Gestión general de Englishlab Gs</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="bell-wrap">
+          <button class="bell-btn" id="bell-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="bell-dot" id="bell-dot"></span>
+          </button>
+          <div class="dropdown" id="notif-dropdown">
+            <div class="dropdown-header">Notificaciones <button id="notif-mark-all">Marcar todo leído</button></div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar" id="chip-avatar">--</div>
+          <div>
+            <div class="name" id="chip-name">Cargando...</div>
+            <div class="role" id="chip-role"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card stat-card"><div class="stat-label">Grados</div><div class="stat-value" id="stat-grados">—</div></div>
+      <div class="card stat-card"><div class="stat-label">Salones</div><div class="stat-value" id="stat-salones">—</div></div>
+      <div class="card stat-card"><div class="stat-label">Estudiantes</div><div class="stat-value" id="stat-estudiantes">—</div></div>
+      <div class="card stat-card"><div class="stat-label">Profesores</div><div class="stat-value" id="stat-profesores">—</div></div>
+    </div>
+
+    <section class="panel" id="sec-grados">
+      <div class="card">
+        <div class="section-title">
+          Grados
+          <button class="btn btn-blue btn-sm" onclick="abrirModalGrado()">+ Nuevo grado</button>
+        </div>
+        <div id="grados-list"><div class="empty-state">Cargando...</div></div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <div class="section-title">
+          Salones
+          <button class="btn btn-blue btn-sm" onclick="abrirModalSalon()">+ Nuevo salón</button>
+        </div>
+        <div id="salones-list"><div class="empty-state">Cargando...</div></div>
+      </div>
+    </section>
+
+    <section class="panel" id="sec-usuarios">
+      <div class="card">
+        <div class="section-title">
+          Usuarios
+          <div style="display:flex; gap:8px;">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+              ⭱ Subir Excel
+              <input type="file" id="excel-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="importarUsuariosExcel(event)" />
+            </label>
+            <button class="btn btn-blue btn-sm" onclick="abrirModalUsuario()">+ Nuevo usuario</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nombre</th><th>Código</th><th>Rol</th><th>Grado</th><th>Salón</th><th>Acciones</th></tr></thead>
+            <tbody id="usuarios-tbody"><tr><td colspan="6" class="empty-state">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- MODAL: Nuevo grado -->
+<div class="modal-overlay" id="modal-grado">
+  <div class="modal">
+    <div class="modal-head"><h3>Nuevo grado</h3><button class="modal-close" onclick="closeModal('modal-grado')">✕</button></div>
+    <form id="form-grado">
+      <div class="form-field"><label>Nombre del grado</label><input type="text" id="grado-nombre" placeholder="Ej: 7" maxlength="20" required /></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-grado')">Cancelar</button>
+        <button type="submit" class="btn btn-blue">Crear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo salón -->
+<div class="modal-overlay" id="modal-salon">
+  <div class="modal">
+    <div class="modal-head"><h3>Nuevo salón</h3><button class="modal-close" onclick="closeModal('modal-salon')">✕</button></div>
+    <form id="form-salon">
+      <div class="form-grid">
+        <div class="form-field"><label>Nombre del salón</label><input type="text" id="salon-nombre" placeholder="Ej: 7-1" maxlength="20" required /></div>
+        <div class="form-field"><label>Grado</label><select id="salon-grado" required></select></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-salon')">Cancelar</button>
+        <button type="submit" class="btn btn-blue">Crear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo usuario -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-head"><h3>Nuevo usuario</h3><button class="modal-close" onclick="closeModal('modal-usuario')">✕</button></div>
+    <form id="form-usuario">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column:1/-1;"><label>Nombre completo</label><input type="text" id="usr-nombre" maxlength="120" required /></div>
+        <div class="form-field"><label>Código</label><input type="text" id="usr-codigo" maxlength="40" required /></div>
+        <div class="form-field"><label>Contraseña inicial</label><input type="text" id="usr-password" minlength="6" maxlength="60" required /></div>
+        <div class="form-field">
+          <label>Rol</label>
+          <select id="usr-rol" required onchange="toggleCamposRol()">
+            <option value="student">Estudiante</option>
+            <option value="teacher">Profesor</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div class="form-field" id="campo-grado">
+          <label>Grado</label>
+          <select id="usr-grado" onchange="filtrarSalonesPorGrado()"></select>
+        </div>
+        <div class="form-field" id="campo-salon">
+          <label>Salón</label>
+          <select id="usr-salon"></select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modal-usuario')">Cancelar</button>
+        <button type="submit" class="btn btn-blue">Crear usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/env.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
