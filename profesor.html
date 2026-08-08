@@ -112,6 +112,7 @@
         <div class="section-title">
           Simulacros
           <button class="btn btn-blue btn-sm" onclick="abrirModalSimulacro()">+ Nuevo simulacro</button>
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalPdf()">⭱ Desde PDF</button>
         </div>
         <div id="simulacros-list"><div class="empty-state">Cargando...</div></div>
       </div>
@@ -164,6 +165,27 @@
   </div>
 </div>
 
+<!-- MODAL: Subir simulacro desde PDF -->
+<div class="modal-overlay" id="modal-pdf-upload">
+  <div class="modal">
+    <div class="modal-head"><h3>Crear simulacro desde PDF</h3><button class="modal-close" onclick="closeModal('modal-pdf-upload')">✕</button></div>
+    <p class="sub" style="margin-bottom:16px;">El sistema intenta leer las preguntas, opciones y respuestas correctas automáticamente. Después podrás revisar y corregir todo antes de guardar.</p>
+    <div class="form-field" style="margin-bottom:14px;">
+      <label>Salón</label>
+      <select id="pdf-salon" required></select>
+    </div>
+    <div class="form-field" style="margin-bottom:14px;">
+      <label>Archivo PDF</label>
+      <input type="file" id="pdf-file" accept="application/pdf" />
+    </div>
+    <div id="pdf-extract-status" class="empty-state" style="display:none;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-pdf-upload')">Cancelar</button>
+      <button type="button" class="btn btn-blue" id="pdf-extract-btn" onclick="extraerPreguntasDesdePdf()">Extraer preguntas</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Nuevo simulacro -->
 <div class="modal-overlay" id="modal-simulacro-editor">
   <div class="modal" style="max-width:620px;">
@@ -211,6 +233,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="js/env.js"></script>
 <script src="js/supabaseClient.js"></script>
 <script src="js/auth.js"></script>

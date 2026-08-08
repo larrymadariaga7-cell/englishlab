@@ -248,25 +248,67 @@ function exportarResultadosExcel() {
 // ---------------------------------------------------------------------
 function abrirModalActividad() { openModal("modal-actividad"); }
 function abrirModalSimulacro() {
-  reiniciarPreguntasBuilder();
-  agregarPreguntaBuilder(); // arranca con una pregunta lista para llenar
+  if (!preguntasBuilderState.length) {
+    reiniciarPreguntasBuilder();
+    agregarPreguntaBuilder(); // arranca con una pregunta lista para llenar
+  }
   openModal("modal-simulacro-editor");
 }
 
 // ---------------------------------------------------------------------
-// EDITOR DE PREGUNTAS (sin JSON) — cada pregunta con enunciado + 4 opciones
+// EDITOR DE PREGUNTAS (sin JSON) — enunciado + de 2 a 6 opciones (A-F)
+// Estado en memoria para poder pre-llenar desde un PDF y permitir
+// agregar/quitar opciones dinámicamente.
 // ---------------------------------------------------------------------
-let preguntaBuilderIds = [];
+const LETRAS = ["A", "B", "C", "D", "E", "F"];
+let preguntasBuilderState = [];
 let preguntaBuilderCounter = 0;
 
-function agregarPreguntaBuilder() {
+function agregarPreguntaBuilder(prefill) {
   preguntaBuilderCounter++;
-  preguntaBuilderIds.push(preguntaBuilderCounter);
+  preguntasBuilderState.push({
+    id: preguntaBuilderCounter,
+    pregunta: prefill?.pregunta || "",
+    opciones: prefill?.opciones && prefill.opciones.length >= 2 ? prefill.opciones : ["", "", "", ""],
+    correcta: prefill?.correcta ?? 0,
+    incierta: prefill?.incierta || false,
+  });
   renderPreguntasBuilder();
 }
 
 function removerPreguntaBuilder(id) {
-  preguntaBuilderIds = preguntaBuilderIds.filter((x) => x !== id);
+  preguntasBuilderState = preguntasBuilderState.filter((p) => p.id !== id);
+  renderPreguntasBuilder();
+}
+
+function agregarOpcionBuilder(id) {
+  const p = preguntasBuilderState.find((x) => x.id === id);
+  if (!p || p.opciones.length >= 6) return;
+  p.opciones.push("");
+  renderPreguntasBuilder();
+}
+
+function quitarOpcionBuilder(id, idx) {
+  const p = preguntasBuilderState.find((x) => x.id === id);
+  if (!p || p.opciones.length <= 2) return;
+  p.opciones.splice(idx, 1);
+  if (p.correcta >= p.opciones.length) p.correcta = 0;
+  renderPreguntasBuilder();
+}
+
+function actualizarPreguntaBuilder(id, valor) {
+  const p = preguntasBuilderState.find((x) => x.id === id);
+  if (p) p.pregunta = valor;
+}
+
+function actualizarOpcionBuilder(id, idx, valor) {
+  const p = preguntasBuilderState.find((x) => x.id === id);
+  if (p) p.opciones[idx] = valor;
+}
+
+function marcarCorrectaBuilder(id, idx) {
+  const p = preguntasBuilderState.find((x) => x.id === id);
+  if (p) { p.correcta = idx; p.incierta = false; }
   renderPreguntasBuilder();
 }
 
@@ -274,63 +316,192 @@ function renderPreguntasBuilder() {
   const box = document.getElementById("preguntas-builder");
   const empty = document.getElementById("preguntas-builder-empty");
   if (!box) return;
-  empty.style.display = preguntaBuilderIds.length ? "none" : "block";
+  empty.style.display = preguntasBuilderState.length ? "none" : "block";
 
-  box.innerHTML = preguntaBuilderIds
+  box.innerHTML = preguntasBuilderState
     .map(
-      (id, idx) => `
-    <div class="card" style="margin-bottom:12px;" data-pregunta-id="${id}">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      (p, idx) => `
+    <div class="card" style="margin-bottom:12px;" data-pregunta-id="${p.id}">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
         <strong style="font-size:13px; color:var(--text-muted);">Pregunta ${idx + 1}</strong>
-        <button type="button" class="btn btn-danger btn-sm" onclick="removerPreguntaBuilder(${id})">Eliminar</button>
+        ${p.incierta ? `<span class="badge badge-gold">⚠ Verifica la respuesta correcta</span>` : ""}
+        <button type="button" class="btn btn-danger btn-sm" onclick="removerPreguntaBuilder(${p.id})">Eliminar</button>
       </div>
       <div class="form-field" style="margin-bottom:10px;">
         <label>Enunciado</label>
-        <input type="text" class="pb-pregunta" maxlength="300" placeholder="Ej: Choose the correct form: She ___ to school every day." />
+        <input type="text" maxlength="500" value="${escapeHTML(p.pregunta)}"
+               oninput="actualizarPreguntaBuilder(${p.id}, this.value)"
+               placeholder="Ej: Choose the correct form: She ___ to school every day." />
       </div>
       <div class="form-grid">
-        ${[0, 1, 2, 3]
+        ${p.opciones
           .map(
-            (i) => `
+            (op, i) => `
           <div class="form-field">
             <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-              <input type="radio" name="correcta-${id}" class="pb-correcta" value="${i}" ${i === 0 ? "checked" : ""} />
-              Opción ${i + 1}${i === 0 ? " (marca la correcta)" : ""}
+              <input type="radio" name="correcta-${p.id}" ${i === p.correcta ? "checked" : ""}
+                     onchange="marcarCorrectaBuilder(${p.id}, ${i})" />
+              Opción ${LETRAS[i]}${i === p.correcta ? " (correcta)" : ""}
             </label>
-            <input type="text" class="pb-opcion" maxlength="150" placeholder="Texto de la opción ${i + 1}" />
+            <div style="display:flex; gap:6px;">
+              <input type="text" maxlength="200" value="${escapeHTML(op)}"
+                     oninput="actualizarOpcionBuilder(${p.id}, ${i}, this.value)"
+                     placeholder="Texto de la opción ${LETRAS[i]}" style="flex:1;" />
+              ${p.opciones.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" onclick="quitarOpcionBuilder(${p.id}, ${i})">✕</button>` : ""}
+            </div>
           </div>`
           )
           .join("")}
       </div>
+      ${p.opciones.length < 6 ? `<button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="agregarOpcionBuilder(${p.id})">+ Agregar opción (hasta F)</button>` : ""}
     </div>`
     )
     .join("");
 }
 
 function leerPreguntasBuilder() {
-  const bloques = document.querySelectorAll("#preguntas-builder [data-pregunta-id]");
-  if (!bloques.length) {
+  if (!preguntasBuilderState.length) {
     toast("Agrega al menos una pregunta antes de guardar.", "error");
     return null;
   }
   const preguntas = [];
-  for (const bloque of bloques) {
-    const pregunta = bloque.querySelector(".pb-pregunta").value.trim();
-    const opciones = Array.from(bloque.querySelectorAll(".pb-opcion")).map((i) => i.value.trim());
-    const correctaInput = bloque.querySelector(".pb-correcta:checked");
-    if (!pregunta || opciones.some((o) => !o) || !correctaInput) {
-      toast("Completa el enunciado y las 4 opciones de cada pregunta.", "error");
+  for (const p of preguntasBuilderState) {
+    const pregunta = p.pregunta.trim();
+    const opciones = p.opciones.map((o) => o.trim());
+    if (!pregunta || opciones.some((o) => !o)) {
+      toast("Completa el enunciado y todas las opciones de cada pregunta.", "error");
       return null;
     }
-    preguntas.push({ pregunta, opciones, correcta: Number(correctaInput.value) });
+    preguntas.push({ pregunta, opciones, correcta: p.correcta });
   }
   return preguntas;
 }
 
 function reiniciarPreguntasBuilder() {
-  preguntaBuilderIds = [];
+  preguntasBuilderState = [];
   preguntaBuilderCounter = 0;
   renderPreguntasBuilder();
+}
+
+// ---------------------------------------------------------------------
+// CREAR SIMULACRO DESDE PDF — extracción de texto (pdf.js) + parser
+// heurístico de preguntas/opciones/respuesta correcta. El profesor
+// siempre revisa el resultado en el editor antes de guardar.
+// ---------------------------------------------------------------------
+function abrirModalPdf() {
+  document.getElementById("pdf-file").value = "";
+  document.getElementById("pdf-extract-status").style.display = "none";
+  const sel = document.getElementById("pdf-salon");
+  sel.innerHTML = SALONES_ASIGNADOS.map((s) => `<option value="${s.id}">${escapeHTML(s.nombre)}</option>`).join("");
+  openModal("modal-pdf-upload");
+}
+
+async function extraerTextoPdf(file) {
+  const buffer = await file.arrayBuffer();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let texto = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    texto += content.items.map((it) => it.str).join(" ") + "\n";
+  }
+  return texto;
+}
+
+// Intenta separar el texto en preguntas numeradas (1. / 1) / 1-) con
+// opciones A-F (A. / A) ), y detectar la respuesta correcta si el PDF
+// la indica explícitamente (ej: "Respuesta: B", "Clave: C").
+function parsearPreguntasDesdeTexto(texto) {
+  const limpio = texto.replace(/\r/g, "").replace(/[ \t]+/g, " ");
+  const bloques = limpio.split(/\n?\s*(?=\d{1,3}[\.\)]\s+)/g).filter((b) => /^\d{1,3}[\.\)]/.test(b.trim()));
+
+  const preguntas = [];
+  for (const bloque of bloques) {
+    const sinNumero = bloque.replace(/^\d{1,3}[\.\)]\s*/, "").trim();
+
+    // separa el enunciado de las opciones A-F
+    const partes = sinNumero.split(/\n?\s*(?=[A-F][\.\)]\s+)/g);
+    if (partes.length < 3) continue; // necesita enunciado + al menos 2 opciones
+
+    const enunciado = partes[0].trim();
+    const opciones = [];
+    let correcta = 0;
+    let incierta = true;
+
+    for (const parte of partes.slice(1)) {
+      const m = parte.match(/^([A-F])[\.\)]\s*(.+)/s);
+      if (!m) continue;
+      let textoOpcion = m[2].trim();
+
+      // busca un marcador de respuesta correcta dentro del propio texto de la opción
+      const marcaRespuesta = textoOpcion.match(/\b(?:respuesta|clave|correcta)\s*[:\-]?\s*([A-F])\b/i);
+      if (marcaRespuesta) {
+        textoOpcion = textoOpcion.replace(marcaRespuesta[0], "").trim();
+      }
+      opciones.push(textoOpcion);
+    }
+    if (opciones.length < 2) continue;
+
+    // busca "Respuesta: X" / "Clave: X" en todo el bloque (después de las opciones)
+    const marcaGlobal = sinNumero.match(/\b(?:respuesta\s*correcta|respuesta|clave)\s*[:\-]?\s*([A-F])\b/i);
+    if (marcaGlobal) {
+      const idx = LETRAS.indexOf(marcaGlobal[1].toUpperCase());
+      if (idx >= 0 && idx < opciones.length) {
+        correcta = idx;
+        incierta = false;
+      }
+    }
+
+    preguntas.push({ pregunta: enunciado, opciones, correcta, incierta });
+  }
+  return preguntas;
+}
+
+async function extraerPreguntasDesdePdf() {
+  const fileInput = document.getElementById("pdf-file");
+  const file = fileInput.files[0];
+  const status = document.getElementById("pdf-extract-status");
+  const salonId = Number(document.getElementById("pdf-salon").value);
+
+  if (!file) return toast("Selecciona un archivo PDF primero.", "error");
+  if (!salonId) return toast("Selecciona el salón antes de continuar.", "error");
+
+  status.style.display = "block";
+  status.textContent = "Leyendo el PDF...";
+
+  try {
+    const texto = await extraerTextoPdf(file);
+    const preguntas = parsearPreguntasDesdeTexto(texto);
+
+    if (!preguntas.length) {
+      status.textContent = "No se pudo detectar ninguna pregunta en el PDF automáticamente. Puedes crear el simulacro manualmente con '+ Nuevo simulacro'.";
+      return;
+    }
+
+    reiniciarPreguntasBuilder();
+    preguntas.forEach((p) => agregarPreguntaBuilder(p));
+
+    const inciertas = preguntas.filter((p) => p.incierta).length;
+
+    document.getElementById("sim-titulo").value = file.name.replace(/\.pdf$/i, "");
+    document.getElementById("sim-salon").innerHTML = SALONES_ASIGNADOS.map((s) => `<option value="${s.id}">${escapeHTML(s.nombre)}</option>`).join("");
+    document.getElementById("sim-salon").value = String(salonId);
+    document.getElementById("sim-estado").value = "borrador";
+
+    closeModal("modal-pdf-upload");
+    openModal("modal-simulacro-editor");
+
+    toast(
+      inciertas
+        ? `Se detectaron ${preguntas.length} preguntas. ${inciertas} necesitan que confirmes la respuesta correcta manualmente.`
+        : `Se detectaron ${preguntas.length} preguntas con sus respuestas. Revísalas antes de guardar.`,
+      inciertas ? "error" : "success"
+    );
+  } catch (err) {
+    console.error(err);
+    status.textContent = "No se pudo leer este PDF. Puede estar escaneado como imagen (sin texto seleccionable) o dañado.";
+  }
 }
 
 async function recargarTodo() {
